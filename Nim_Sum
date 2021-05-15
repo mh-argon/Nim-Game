@@ -1,0 +1,232 @@
+using System;
+
+namespace Nim_Sum
+{
+    class Program
+    {
+        int[] piles;
+        int currentPlayer = 1;
+        /// <summary>
+        /// This is the method that creates the game and generates the array which will be used throughout the project
+        /// </summary>
+        void createGame ()
+        {
+            // prepares the random values in each pile
+            Random rnd = new Random();
+            // starts the game and asks for user input for the amount of piles they want
+            Console.WriteLine("===Game of Nim===");
+            Console.WriteLine("What is the maximum number per pile: ");
+
+            // creates the random pile amount from 2-5
+            int pileAmount = rnd.Next(2, 6);
+            // maximum value within each pile which is randomised, i.e user selets 10, so each pile has up to 10 value
+            int maximumValue = Convert.ToInt32(Console.ReadLine());
+
+            // generates the array for the piles
+            piles = new int[pileAmount];
+
+            // generates the random values in the piles
+            for (int i = 0; i < piles.Length; i++)
+            {
+                // randomises the values in the pile that is currently being looked at
+                piles[i] = rnd.Next(1, maximumValue);
+            }
+        }
+
+        /// <summary>
+        /// This is the player turn which determines what the player can do
+        /// </summary>
+        /// <param name="piles"> the array being looked at </param>
+        void playerTurn (int[] piles)
+        {
+            bool valid = false;
+            int selectValue = 0;
+            int selectPile = 0;
+            while (valid == false)
+            {
+                // asks for how many values they want to take
+                Console.WriteLine("How many do you want to take: ");
+                selectValue = Convert.ToInt32(Console.ReadLine());
+
+                if (selectValue <= 0)
+                {
+                    Console.WriteLine("The value was incorrect please input the correct value, which is an integer above 0");
+                }
+                else
+                {
+                    valid = true;
+                }
+            }
+
+            // asks for which pile the user wants to take from
+            Console.WriteLine("Which pile do you want to take values from: ");
+            selectPile = Convert.ToInt32(Console.ReadLine()) - 1;
+
+            // pile array element is equal to the pile selected element subtracting the selected value
+            piles[selectPile] -= selectValue;
+        }
+
+        /// <summary>
+        /// Crates the current state of the board with the pile array
+        /// </summary>
+        /// <param name="pile"> the array being looked at </param>
+        void currentBoard(int[] pile)
+        {
+            Console.Write("[");
+            for (int i = 0; i < pile.Length; i++)
+            {
+                Console.Write(pile[i]);
+                if (i < pile.Length - 1)
+                {
+                    Console.Write(", ");
+                }
+            }
+            Console.Write("]");
+            Console.WriteLine();
+        }
+        /// <summary>
+        /// checks the state of the game and will provide a end state if things change
+        /// </summary>
+        /// <param name="pile"> the array being looked at </param>
+        /// <returns>the state of the game</returns>
+        bool victoryState(int[] pile)
+        {
+            bool returnValue = false;
+            int sum = 0;
+            for (int i = 0; i < pile.Length; i++)
+            {
+                sum += pile[i];
+            }
+            if (sum == 1)
+            {
+                Console.WriteLine("Game Over");
+                currentBoard(pile);
+                Console.WriteLine("Player " + currentPlayer + " loses!!");
+                returnValue = true;
+            }
+            else if (sum == 0)
+            {
+                if (currentPlayer == 1)
+                {
+                    currentPlayer = 2;
+                }
+                else
+                {
+                    currentPlayer = 1;
+                }
+                Console.WriteLine("Game Over");
+                currentBoard(pile);
+                Console.WriteLine("Player " + currentPlayer + " loses!!");
+            }
+            return returnValue;
+        }
+        /// <summary>
+        /// Determines what the computer will do and comutes the outcome
+        /// </summary>
+        /// <param name="piles"> the array being looked at </param>
+        void computerTurn(int[] piles)
+        {
+            Random rand = new Random();
+
+            int[] testPiles = new int[piles.Length];
+            for (int i = 0; i < piles.Length; i++)
+            {
+                testPiles[i] = piles[i];
+            }
+            bool complete = false;
+            // The computer is winning and wants to leave the opponent with a nim sum of 0 meaning they have to take the last value
+            if (nimSumState(piles) != 0)
+            {
+                Console.WriteLine("Computer wants to change the current nim sum status");
+                for (int i = 0; i < piles.Length && complete == false; i++)
+                {
+                    for (int y = 1; y <= piles[i]; y++)
+                    {
+                        testPiles[i] -= y;
+                        if (nimSumState(testPiles) == 0)
+                        {
+                            piles[i] -= y;
+                            complete = true;
+                            Console.WriteLine("Computer removes " + y + " from " + (i + 1));
+                            break;
+                        }
+                        else
+                        {
+                            testPiles[i] += y;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Computer wants to delay the game");
+                for (int i = 0; i < piles.Length; i++)
+                {
+                    // computer will just remove a number, 1, to delay the game and hope for a player mistake
+                    if (piles[i] > 0)
+                    {
+                        piles[i] -= 1;
+                        Console.WriteLine("Computer removes 1 at " + (i + 1));
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// allows the computer to find a state of winning from the nim sum, which is the sum of all elements in binary
+        /// </summary>
+        /// <param name="piles"> The array being looked at </param>
+        /// <returns> returns the nimSum value which is the value of the overall nim state </returns>
+        int nimSumState(int[] piles)
+        {
+            // choosing a pile to start the nimSum
+            int nimSum = piles[0];
+            // loops through the pile elements
+            for (int i = 0; i <= piles.Length - 1; i++)
+            {
+                // XOR for nimSum and piles[i], setting new nimSum to piles[i]
+                nimSum ^= piles[i];
+            }
+            // returns the nimSum
+            return nimSum;
+        }
+
+        /// <summary>
+        /// The method for playing the game running through all functions and determining what the winstate is
+        /// </summary>
+        /// <param name="piles"> The array being looked at </param>
+        void playGame(int[] piles)
+        {
+            // will be used to determine the state of the game
+            bool complete = false;
+
+            // main game loop
+            do
+            {
+                // prints out the game board
+                currentBoard(piles);
+                if (currentPlayer == 1)
+                {
+                    playerTurn(piles);
+                    currentPlayer = 2;
+                }
+                else
+                {
+                    computerTurn(piles);
+                    currentPlayer = 1;
+                }
+
+                complete = victoryState(piles);
+
+            } while (complete == false);
+        }
+        static void Main(string[] args)
+        {
+            Program game = new Program();
+
+            game.createGame();
+            game.playGame(game.piles);
+        }
+    }
+}
